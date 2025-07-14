@@ -1,1 +1,10 @@
-Esse repo serve pra testar a conexão entre github pages e o backed do render
+Esse repo contém o projeto do app de consultar preços
+
+Agora vamos trabalhar no sistema mobile, eu quero um app com 4 telas
+
+1 - Digite o nome do mercado(campo de texto) e botão "começar"
+2 - Escaneie o código de barras (por enquanto vamos deixar um campo pra digitar o nome e digitar o código de barras, depois vamos colocar uma biblioteca que lê esse código usando a câmera do celular e mostra as infos do gs1 na tela de confirmação)
+nessa tela vai ter um botão "anotar preço" que leva pra tela de confirmação e "encerrar" pra terminar a pesquisa e voltar pra primeira tela
+3 - confirme as informações do produto e digite o preço (por enquanto o usuário vai ver só o nome do mercado, o nome do produto e o número do código de barras) em baixo ele vai digitar o preço e clicar em salvar, então vai aparecer uma mensagem de confirmação "deseja registrar esse preço?" e dois botões "sim" e "não", caso ele clique em sim, aparece uma mensagem de "sucesso!" e ele volta pra tela de escanear o código de barras, caso ele clique em não a mensagem some e ele volta pra tela de adicionar o preço
+
+vamos fazer uma por uma, começando pela tela inicial de começar a pesquisa
