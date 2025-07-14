@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de Produto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Cadastro de Produto</h1>
+  <form id="produtoForm">
+    <input type="hidden" name="id">
+    <label>Nome: <input type="text" name="nome" required></label><br><br>
+    <label>Preço: <input type="number" step="0.01" name="preco" required></label><br><br>
+    <label>Código de Barras: <input type="text" name="codigo_barras" required></label><br><br>
+    <label>Mercado: <input type="text" name="mercado" required></label><br><br>
+    <button type="submit">Salvar</button>
+    <button type="button" id="cancelarEdicao" style="display:none">Cancelar</button>
+  </form>
+
+  <div id="resultado"></div>
+
+  <h2>Produtos Cadastrados</h2>
+  <table id="tabelaProdutos">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Preço</th>
+        <th>Código de Barras</th>
+        <th>Mercado</th>
+        <th>Data de Registro</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_URL = 'postgresql://crud_db_ci57_user:mtJqltpgcsSH14MdejUH8LZSGzJzrw84@dpg-d1q6srripnbc738ni6s0-a.ohio-postgres.render.com/crud_db_ci57';
+
+    const form = document.getElementById("produtoForm");
+    const cancelarBtn = document.getElementById("cancelarEdicao");
+    const resultado = document.getElementById("resultado");
+    const tabela = document.querySelector("#tabelaProdutos tbody");
+
+      // Preencher mercado automaticamente
+    window.addEventListener("DOMContentLoaded", () => {
+        const mercadoSalvo = localStorage.getItem("mercadoSelecionado");
+        if (mercadoSalvo) {
+        form.mercado.value = mercadoSalvo;
+        }
+        carregarProdutos();
+    });
+
+    // Salvar mercado digitado
+    form.mercado.addEventListener("input", () => {
+        localStorage.setItem("mercadoSelecionado", form.mercado.value);
+    });
+
+    const carregarProdutos = async () => {
+      const res = await fetch("http://localhost:3000/produtos");
+      const produtos = await res.json();
+      tabela.innerHTML = "";
+        produtos.forEach(p => {
+        const dataUTC = new Date(p.registrado_em);
+        dataUTC.setHours(dataUTC.getHours() - 3); // corrige fuso UTC -> Brasília
+        const dataLocal = dataUTC.toLocaleString('pt-BR');
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${p.nome}</td>
+            <td>R$ ${Number(p.preco).toFixed(2)}</td>
+            <td>${p.codigo_barras}</td>
+            <td>${p.mercado}</td>
+            <td>${dataLocal}</td>
+            <td>
+            <button onclick="editarProduto(${p.id}, '${p.nome}', ${p.preco}, '${p.codigo_barras}', '${p.mercado}')">Editar</button>
+            <button onclick="excluirProduto(${p.id})">Excluir</button>
+            </td>
+        `;
+        tabela.appendChild(tr);
+        });
+
+
+    };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const dados = {
+        nome: form.nome.value,
+        preco: parseFloat(form.preco.value),
+        codigo_barras: form.codigo_barras.value,
+        mercado: form.mercado.value,
+      };
+
+      const id = form.id.value;
+      const url = id ? `http://localhost:3000/produtos/${id}` : "http://localhost:3000/produtos";
+      const metodo = id ? "PUT" : "POST";
+
+      try {
+        const res = await fetch(url, {
+          method: metodo,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dados),
+        });
+
+        if (res.ok) {
+          resultado.textContent = id ? "Produto atualizado!" : "Produto cadastrado!";
+          form.reset();
+          form.id.value = "";
+          cancelarBtn.style.display = "none";
+          carregarProdutos();
+        } else {
+          resultado.textContent = "Erro: " + await res.text();
+        }
+      } catch {
+        resultado.textContent = "Erro de rede ou servidor fora do ar.";
+      }
+    });
+
+    cancelarBtn.addEventListener("click", () => {
+      form.reset();
+      form.id.value = "";
+      cancelarBtn.style.display = "none";
+      resultado.textContent = "";
+    });
+
+    window.editarProduto = (id, nome, preco, codigo_barras, mercado) => {
+      form.id.value = id;
+      form.nome.value = nome;
+      form.preco.value = preco;
+      form.codigo_barras.value = codigo_barras;
+      form.mercado.value = mercado;
+      cancelarBtn.style.display = "inline";
+    };
+
+    window.excluirProduto = async (id) => {
+      if (confirm("Deseja realmente excluir este produto?")) {
+        const res = await fetch(`http://localhost:3000/produtos/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          resultado.textContent = "Produto excluído.";
+          carregarProdutos();
+        } else {
+          resultado.textContent = "Erro ao excluir.";
+        }
+      }
+    };
+
+    carregarProdutos();
+  </script>
+</body>
+</html>
