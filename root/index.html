@@ -57,7 +57,7 @@
     });
 
     const carregarProdutos = async () => {
-      const res = await fetch("http://localhost:3000/produtos");
+      const res = await fetch("`${API_URL}/produtos");
       const produtos = await res.json();
       tabela.innerHTML = "";
         produtos.forEach(p => {
@@ -93,7 +93,7 @@
       };
 
       const id = form.id.value;
-      const url = id ? `http://localhost:3000/produtos/${id}` : "http://localhost:3000/produtos";
+      const url = id ? `${API_URL}/produtos/${id}` : `${API_URL}/produtos`;
       const metodo = id ? "PUT" : "POST";
 
       try {
@@ -135,7 +135,7 @@
 
     window.excluirProduto = async (id) => {
       if (confirm("Deseja realmente excluir este produto?")) {
-        const res = await fetch(`http://localhost:3000/produtos/${id}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/produtos/${id}`, { method: "DELETE" });
         if (res.ok) {
           resultado.textContent = "Produto excluído.";
           carregarProdutos();
