@@ -61,9 +61,10 @@
       const produtos = await res.json();
       tabela.innerHTML = "";
         produtos.forEach(p => {
-        const dataUTC = new Date(p.registrado_em);
-        dataUTC.setHours(dataUTC.getHours() - 3); // corrige fuso UTC -> Brasília
-        const dataLocal = dataUTC.toLocaleString('pt-BR');
+        const dataLocal = new Date(p.registrado_em).toLocaleString('pt-BR', {
+          timeZone: 'America/Sao_Paulo'
+        });
+
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
