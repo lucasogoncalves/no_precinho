@@ -35,7 +35,7 @@
   </table>
 
   <script>
-    const API_URL = 'https://test-render-dp80.onrender.com/';
+    const API_URL = 'https://test-render-dp80.onrender.com';
 
     const form = document.getElementById("produtoForm");
     const cancelarBtn = document.getElementById("cancelarEdicao");
@@ -57,7 +57,7 @@
     });
 
     const carregarProdutos = async () => {
-      const res = await fetch("`${API_URL}/produtos");
+      const res = await fetch(`${API_URL}/produtos`);
       const produtos = await res.json();
       tabela.innerHTML = "";
         produtos.forEach(p => {
