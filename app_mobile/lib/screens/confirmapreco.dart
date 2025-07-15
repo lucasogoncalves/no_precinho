@@ -1,37 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:developer';
 
 class ConfirmacaoScreen extends StatefulWidget {
-  const ConfirmacaoScreen({super.key});
+  final String codigo;
+  final String mercado;
+  final String nome;
+
+  const ConfirmacaoScreen({
+    super.key,
+    required this.nome,
+    required this.codigo,
+    required this.mercado,
+  });
 
   @override
   State<ConfirmacaoScreen> createState() => _ConfirmacaoScreenState();
 }
+
 
 class _ConfirmacaoScreenState extends State<ConfirmacaoScreen> {
   final TextEditingController _precoController = TextEditingController();
   bool mostrarConfirmacao = false;
   bool sucesso = false;
 
+
   late String nome;
   late String codigo;
   late String mercado;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final Map<String, dynamic> args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    nome = args['nome'];
-    codigo = args['codigo'];
-    mercado = args['mercado'];
+  void initState() {
+    super.initState();
+    nome = widget.nome;
+    codigo = widget.codigo;
+    mercado = widget.mercado;
   }
 
+
   void _salvar() {
-    if (_precoController.text.trim().isEmpty) {
+    final precoTexto = _precoController.text.replaceAll(',', '.').trim();
+    final preco = double.tryParse(precoTexto);
+
+    if (nome.isEmpty || codigo.isEmpty || preco == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Digite o preço')),
+        const SnackBar(content: Text('Preencha todos os campos corretamente')),
       );
       return;
     }
@@ -42,27 +56,71 @@ class _ConfirmacaoScreenState extends State<ConfirmacaoScreen> {
   }
 
   void _confirmarSim() async {
-    setState(() {
-      sucesso = true;
-    });
+    final precoTexto = _precoController.text.replaceAll(',', '.').trim();
+    final preco = double.tryParse(precoTexto);
 
-    final bool enviado = await enviarProduto(
-      nome: nome,
-      preco: double.parse(_precoController.text),
-      codigoBarras: codigo,
-      mercado: mercado,
-    );
-
-    if (!mounted) return;
-
-    if (enviado) {
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.popUntil(context, ModalRoute.withName('/scanner'));
-      });
-    } else {
+    if (nome.isEmpty || codigo.isEmpty || preco == null || preco <= 0.0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao salvar produto')),
+        const SnackBar(content: Text('Preencha todos os campos corretamente')),
       );
+      return;
+    }
+
+    setState(() => sucesso = true);
+
+    final url = Uri.parse('https://test-render-dp80.onrender.com/produtos');
+
+    final Map<String, dynamic> body = {
+      'nome': nome,
+      'preco': preco,
+      'codigo_barras': codigo,
+    };
+
+    if (mercado.isNotEmpty) {
+      body['mercado'] = mercado;
+    }
+
+    log('📦 JSON final enviado: ${jsonEncode(body)}');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+        },
+        body: jsonEncode(body),
+      );
+
+      log('📬 Status: ${response.statusCode}');
+      log('📦 Resposta: ${response.body}');
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/scanner', arguments: {
+              'mercado': mercado,
+            });
+          }
+        });
+      } else {
+        setState(() => sucesso = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro do servidor: ${response.statusCode}\n📦 JSON enviado: ${jsonEncode(body)}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => sucesso = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro de conexão: $e')),
+      );
+      log('❌ Exceção: $e');
     }
   }
 
@@ -70,28 +128,6 @@ class _ConfirmacaoScreenState extends State<ConfirmacaoScreen> {
     setState(() {
       mostrarConfirmacao = false;
     });
-  }
-
-  Future<bool> enviarProduto({
-    required String nome,
-    required double preco,
-    required String codigoBarras,
-    required String mercado,
-  }) async {
-    const url = 'https://test-render-dp80.onrender.com'; // Atualize com seu endpoint real
-
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'nome': nome,
-        'preco': preco,
-        'codigo_barras': codigoBarras,
-        'mercado': mercado,
-      }),
-    );
-
-    return response.statusCode == 200 || response.statusCode == 201;
   }
 
   @override
@@ -103,7 +139,7 @@ class _ConfirmacaoScreenState extends State<ConfirmacaoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mercado: $mercado', style: const TextStyle(fontSize: 16)),
+            Text('Mercado: ${widget.mercado}', style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
             Text('Produto: $nome', style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
@@ -115,7 +151,7 @@ class _ConfirmacaoScreenState extends State<ConfirmacaoScreen> {
                 labelText: 'Preço',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 24),
             if (!mostrarConfirmacao && !sucesso)

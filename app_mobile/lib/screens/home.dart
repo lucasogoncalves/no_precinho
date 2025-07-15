@@ -8,11 +8,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _mercadoController = TextEditingController();
+  final TextEditingController mercadoController = TextEditingController();
 
   void _comecarPesquisa() {
-    final nomeMercado = _mercadoController.text.trim();
-    if (nomeMercado.isEmpty) {
+    final mercado = mercadoController.text.trim();
+
+    if (mercado.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Digite o nome do mercado')),
       );
@@ -22,8 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushNamed(
       context,
       '/scanner',
-      arguments: nomeMercado,
+      arguments: {
+        'mercado': mercadoController.text.trim(),
+      },
     );
+
   }
 
   @override
@@ -41,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: _mercadoController,
+              controller: mercadoController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Nome do mercado',
